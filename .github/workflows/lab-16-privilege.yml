@@ -1,0 +1,28 @@
+name: Least Privilege
+on: [workflow_dispatch]
+
+# 1. Global Level: Set default to 'none' for maximum security
+permissions: {}
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    # 2. Job Level: Grant only what is strictly necessary
+    permissions:
+      contents: read  # Required to checkout the Academia-Synapse code
+      packages: read  # Required if pulling private npm packages
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Attempt Unauthorized Write
+        run: |
+          echo "This should FAIL if we try to push a change"
+          git config user.name "Security Bot"
+          git config user.email "bot@academia-synapse.com"
+          echo "Malicious Change" >> README.md
+          git add README.md
+          git commit -m "This push will fail"
+          # This command will trigger a '403 Forbidden' error
+          git push origin main || echo "SUCCESS: Push was blocked by Least Privilege!"
